@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>კორექტირების გენერაცია</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f4f8;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+      max-width: 800px;
+      width: 100%;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2em;
+      margin-bottom: 25px;
+      color: #2c3e50;
+    }
+    label {
+      font-size: 0.9em;
+      display: block;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    .main-input-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 20px;
+    }
+    .main-input {
+      border: 2px solid #007bff;
+      padding: 8px;
+      font-size: 1em;
+      width: 150px;
+      border-radius: 6px;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .row input, .row select {
+      padding: 6px;
+      font-size: 0.9em;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background-color: #fff;
+      box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
+    }
+    .row input[type=text] {
+      width: 90px;
+    }
+    .row select {
+      width: 170px;
+    }
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .remove-btn {
+      background-color: crimson;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-weight: bold;
+      width: 30px;
+      height: 30px;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 0.9em;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      height: 80px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 0.95em;
+      cursor: pointer;
+      margin-top: 10px;
+      border: none;
+      border-radius: 6px;
+      background-color: #007bff;
+      color: white;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #4CAF50;
+      color: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 9999;
+      font-size: 1.1em;
+      text-align: center;
+    }
+    .error {
+      border: 2px solid crimson !important;
+    }
+    @media (max-width: 600px) {
+      .row {
+        flex-direction: column;
+      }
+      .main-input {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>კორექტირების გენერაცია</h1>
+
+    <div class="main-input-group">
+      <label for="invoice">ზედნადების ნომრის ბოლო 4 ციფრი</label>
+      <input class="main-input" id="invoice" placeholder="მაგ: 1234" required>
+    </div>
+
+    <div id="entries"></div>
+
+    <div class="row section">
+      <button onclick="addEntry()">+</button>
+    </div>
+
+    <button onclick="generateText()">გენერაცია</button>
+    <div class="section">
+      <textarea id="result" readonly></textarea>
+      <button onclick="copyText()">კოპირება</button>
+      <div id="popup" class="popup">დაკოპირდა!</div>
+    </div>
+  </div>
+
+  <script>
+    const reasons = [
+      "დაზიანებული პროდუქცია", "არ დაგვხდა მენეჯერი", "არ ემთხვევა კლიენტის შეკვეთას",
+      "მეტი აქვს დაწერილი პრისეილერს", "ითხოვს კრედიტში დატოვებას", "დაგვაგვიანდა მისვლა",
+      "გვაკლია ბორტზე", "თანხა არ ჰქონდა", "მაღაზია დაკეტილია", "სხვა მისამართზეა დაწერილი შეკვეთა",
+      "პერესორტი", "პროდუქცია არ შედის ობიექტში", "დაბალ ვადიანია", "საწყობიდან დაგვაკლეს",
+      "ტრანსპორტის დაზიანება", "ფასების შეუსაბამობა", "ფორს მაჟორი (უამინდობა, გადაკეტილი გზა,)"
+    ];
+
+    const entriesDiv = document.getElementById("entries");
+    let entries = [];
+
+    function createEntry(reasonValue = "") {
+      const div = document.createElement("div");
+      div.className = "row";
+
+      const barcode = document.createElement("input");
+      barcode.placeholder = "შტრიხკოდი";
+      barcode.type = "text";
+      barcode.required = true;
+
+      const quantity = document.createElement("input");
+      quantity.placeholder = "რაოდენობა";
+      quantity.type = "text";
+      quantity.required = true;
+
+      const select = document.createElement("select");
+      const placeholderOption = document.createElement("option");
+      placeholderOption.value = "";
+      placeholderOption.disabled = true;
+      placeholderOption.selected = true;
+      placeholderOption.textContent = "აირჩიე მიზეზი";
+      select.appendChild(placeholderOption);
+
+      reasons.forEach(r => {
+        const option = document.createElement("option");
+        option.value = r;
+        option.textContent = r;
+        select.appendChild(option);
+      });
+
+      const removeBtn = document.createElement("button");
+      removeBtn.textContent = "X";
+      removeBtn.className = "remove-btn";
+      removeBtn.title = "წაშლა";
+      removeBtn.onclick = () => {
+        entriesDiv.removeChild(div);
+        entries = entries.filter(e => e !== entryObj);
+      };
+
+      div.appendChild(barcode);
+      div.appendChild(quantity);
+      div.appendChild(select);
+      if (entries.length > 0) div.appendChild(removeBtn);
+
+      const entryObj = { div, barcode, quantity, select };
+      entries.push(entryObj);
+      entriesDiv.appendChild(div);
+    }
+
+    function addEntry() {
+      const lastEntry = entries[entries.length - 1];
+      if (lastEntry) {
+        let hasError = false;
+        [lastEntry.barcode, lastEntry.quantity, lastEntry.select].forEach(el => {
+          if (!el.value.trim()) {
+            el.classList.add("error");
+            hasError = true;
+          } else {
+            el.classList.remove("error");
+          }
+        });
+        if (hasError) {
+          alert("გთხოვ შეავსე ყველა ველი!");
+          return;
+        }
+      }
+      createEntry();
+    }
+
+    function generateText() {
+      const invoice = document.getElementById("invoice");
+      let hasError = false;
+      if (!invoice.value.trim()) {
+        invoice.classList.add("error");
+        hasError = true;
+      } else {
+        invoice.classList.remove("error");
+      }
+      for (let e of entries) {
+        [e.barcode, e.quantity, e.select].forEach(el => {
+          if (!el.value.trim()) {
+            el.classList.add("error");
+            hasError = true;
+          } else {
+            el.classList.remove("error");
+          }
+        });
+      }
+      if (hasError) return;
+      let result = invoice.value.trim() + "\n";
+      result += entries.map(e => `${e.barcode.value.trim()} - ${e.quantity.value.trim()}ც - ${e.select.value}`).join("\n");
+      document.getElementById("result").value = result;
+    }
+
+    function copyText() {
+      const text = document.getElementById("result");
+      navigator.clipboard.writeText(text.value).then(() => {
+        const popup = document.getElementById("popup");
+        popup.style.display = 'block';
+        setTimeout(() => {
+          popup.style.display = 'none';
+        }, 2000);
+      });
+    }
+
+    // Initial entry
+    createEntry();
+  </script>
+</body>
+</html>
