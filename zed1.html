@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>რესფონსივი ფორმა</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .main-input {
+      background-color: #e0f7fa;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .main-input label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .main-input input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .line-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 15px;
+      align-items: flex-end;
+    }
+    .field {
+      flex: 1;
+      min-width: 150px;
+      display: flex;
+      flex-direction: column;
+    }
+    .field label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    input[type=number], input[type=text], select {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      appearance: textfield;
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+      background-color: #1976d2;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #135ba1;
+    }
+    .remove-btn {
+      background-color: #e53935;
+      margin-top: 0;
+    }
+    .remove-btn:hover {
+      background-color: #b71c1c;
+    }
+    textarea {
+      width: 100%;
+      height: 150px;
+      margin-top: 20px;
+      padding: 10px;
+      font-size: 16px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .question-section {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .bottom-button {
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>კორექტირების გენერაცია</h1>
+
+    <div class="main-input">
+      <label for="invoice">ზედნადების ნომრის ბოლო 4 ციფრი:</label>
+      <input type="text" id="invoice" placeholder="მაგ: 1234" />
+    </div>
+
+    <div id="lines-container"></div>
+
+    <div class="question-section">
+      <p>კიდეა დასაკორექტირებელი?</p>
+      <button type="button" onclick="addLine()">დიახ</button>
+      <p>და თუ არა დააჭირე ქვემოთ ღილაკს გენერაციას</p>
+    </div>
+
+    <div class="bottom-button">
+      <button type="button" onclick="generateText()">გენერაცია</button>
+    </div>
+
+    <div id="output-section" style="display: none;">
+      <textarea id="output" readonly></textarea>
+      <button onclick="copyText()">კოპირება</button>
+    </div>
+  </div>
+
+  <script>
+    const container = document.getElementById('lines-container');
+
+    const reasons = [
+      "დაზიანებული პროდუქცია",
+      "არ დაგვხდა მენეჯერი",
+      "არ ემთხვევა კლიენტის შეკვეთას",
+      "მეტი აქვს დაწერილი პრისეილერს",
+      "ითხოვს კრედიტში დატოვებას",
+      "დაგვაგვიანდა მისვლა",
+      "გვაკლია ბორტზე",
+      "თანხა არ ჰქონდა",
+      "მაღაზია დაკეტილია",
+      "სხვა მისამართზეა დაწერილი შეკვეთა",
+      "პერესორტი",
+      "პროდუქცია არ შედის ობიექტში",
+      "დაბალ ვადიანია",
+      "საწყობიდან დაგვაკლეს",
+      "ტრანსპორტის დაზიანება",
+      "ფასების შეუსაბამობა",
+      "ფორს მაჟორი (უამინდობა, გადაკეტილი გზა,)"
+    ];
+
+    function createLine(selectedReason = "") {
+      const group = document.createElement('div');
+      group.className = 'line-group';
+
+      group.innerHTML = `
+        <div class="field">
+          <label>შტრიხკოდი</label>
+          <input type="number" class="barcode" placeholder="შტრიხკოდი" />
+        </div>
+        <div class="field">
+          <label>რაოდენობა</label>
+          <input type="number" class="quantity" placeholder="რაოდენობა" />
+        </div>
+        <div class="field">
+          <label>მიზეზი</label>
+          <select class="reason">
+            <option value="">აირჩიე მიზეზი</option>
+            ${reasons.map(r => `<option ${r === selectedReason ? 'selected' : ''}>${r}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field" style="min-width:100px">
+          <label>&nbsp;</label>
+          <button type="button" class="remove-btn" onclick="removeLine(this)">წაშლა</button>
+        </div>
+      `;
+
+      container.appendChild(group);
+    }
+
+    function addLine() {
+      const lastReason = document.querySelectorAll('.reason');
+      const selectedReason = lastReason.length > 0 ? lastReason[lastReason.length - 1].value : "";
+      createLine(selectedReason);
+    }
+
+    function removeLine(btn) {
+      container.removeChild(btn.closest('.line-group'));
+    }
+
+    function generateText() {
+      const invoice = document.getElementById('invoice').value.trim();
+      if (!invoice) {
+        alert("გთხოვთ შეიყვანოთ ზედნადების ნომერი.");
+        return;
+      }
+
+      const barcodes = document.querySelectorAll('.barcode');
+      const quantities = document.querySelectorAll('.quantity');
+      const reasonsSelect = document.querySelectorAll('.reason');
+
+      let output = invoice + "\n";
+
+      for (let i = 0; i < barcodes.length; i++) {
+        const barcode = barcodes[i].value.trim();
+        const quantity = quantities[i].value.trim();
+        const reason = reasonsSelect[i].value.trim();
+
+        if (!barcode || !quantity || !reason) {
+          alert("გთხოვთ შეავსოთ ყველა ველი.");
+          return;
+        }
+
+        output += `${barcode} - ${quantity}ც - ${reason}\n`;
+      }
+
+      document.getElementById('output').value = output.trim();
+      document.getElementById('output-section').style.display = 'block';
+    }
+
+    function copyText() {
+      const textArea = document.getElementById("output");
+      textArea.select();
+      textArea.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      alert("დაკოპირებულია!");
+    }
+
+    window.onload = () => createLine();
+  </script>
+</body>
+</html>
