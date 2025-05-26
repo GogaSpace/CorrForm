@@ -7,7 +7,7 @@
   <style>
     @font-face {
       font-family: 'Gordeziani';
-      src: url('./gl-gordeziani-regular.ttf') format('truetype');
+      src: url('./fonts/gl-gordeziani-regular.ttf') format('truetype');
     }
 
     body {
@@ -170,7 +170,20 @@
 
     button:hover {
       background-color: #0056b3;
+
     }
+.yellow-popup {
+  background-color: #ffc107 !important; /* ყვითელი */
+  color: black !important;
+}
+#clear-popup {
+  background-color: #ffc107 !important;
+  color: black !important;
+}
+.red-popup {
+  background-color: #dc3545 !important; /* წითელი */
+  color: white !important;
+}
 
     .popup {
       display: none;
@@ -217,10 +230,15 @@
   <div class="container">
     <h1>კორექტირების გენერაცია</h1>
 
-    <div class="main-input-group">
-      <label for="invoice">ზედნადების ნომრის ბოლო 4 ციფრი</label>
-      <input class="main-input" id="invoice" placeholder="მაგ: 1234" required type="number" inputmode="numeric" pattern="[0-9]*" min="0">
-    </div>
+    <div class="main-input-group" style="flex-direction: row; align-items: flex-end; gap: 10px;">
+  <div style="flex: 1;">
+    <label for="invoice">ზედნადების ნომრის ბოლო 4 ციფრი</label>
+    <input class="main-input" id="invoice" placeholder="მაგ: 1234" required type="number" inputmode="numeric" pattern="[0-9]*" min="0">
+  </div>
+  <button onclick="resetForm()" style="height: 42px;">გასუფთავება</button>
+</div>
+
+
 
     <div class="main-input-group">
       <label for="global-reason">აირჩიე მთავარი მიზეზი</label>
@@ -240,6 +258,9 @@
       <textarea id="result" readonly></textarea>
       <button onclick="copyText()">კოპირება</button>
       <div id="popup" class="popup">დაკოპირდა!</div>
+	<div id="clear-popup" class="popup yellow-popup">გასუფთავდა!</div>
+	<div id="error-popup" class="popup red-popup">შეცდომა</div>
+
     </div>
 
     <div class="reason-popup" id="reason-popup">
@@ -380,10 +401,11 @@
       }
 
       if (hasError) {
-        const popup = document.getElementById("popup");
-        popup.textContent = `გთხოვ შეავსე შემდეგი ველები: ${[...new Set(missingFields)].join(", ")}`;
-        popup.style.display = 'block';
-        setTimeout(() => popup.style.display = 'none', 3000);
+        const errorPopup = document.getElementById("error-popup");
+errorPopup.textContent = `გთხოვ შეავსე შემდეგი ველები: ${[...new Set(missingFields)].join(", ")}`;
+errorPopup.style.display = 'block';
+setTimeout(() => errorPopup.style.display = 'none', 3000);
+
         return;
       }
 
@@ -430,6 +452,27 @@
         activeReasonButton = null;
       }
     });
+function resetForm() {
+  document.getElementById("invoice").value = "";
+  document.getElementById("global-reason").selectedIndex = 0;
+  document.getElementById("result").value = "";
+  document.getElementById("result").style.height = "60px";
+
+  entries.forEach(entry => {
+    entriesDiv.removeChild(entry.div);
+  });
+  entries.length = 0;
+
+  createEntry();
+
+  // ყვითელი popup - გასუფთავდა!
+  const clearPopup = document.getElementById("clear-popup");
+  clearPopup.style.display = 'block';
+  setTimeout(() => {
+    clearPopup.style.display = 'none';
+  }, 2000);
+}
+
 
   </script>
 </body>
